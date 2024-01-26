@@ -1,0 +1,2 @@
+# This project is built and tested on python 3.11.7 and requires following packages
+numpy # 1.26.3
