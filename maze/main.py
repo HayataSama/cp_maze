@@ -16,6 +16,7 @@ HEIGHT = int(input("Enter an odd number for Height: "))
 START = []
 END = []
 value_matrix = np.zeros((HEIGHT, WIDTH))
+junctions = []
 assert WIDTH % 2 == 1 and WIDTH >= 3
 assert HEIGHT % 2 == 1 and HEIGHT >= 3
 
@@ -58,6 +59,47 @@ def get_maze():
     printc(value_matrix)
 
 
+def find_move(position):
+    # find all 4 neighbor cells for a given position
+    neighbor_cells = [
+        (position[0], position[1] + 1),  # right
+        (position[0] - 1, position[1]),  # top
+        (position[0], position[1] - 1),  # left
+        (position[0] + 1, position[1]),  # bottom
+    ]
+
+    # find all possible moves for a given position
+    possible_moves = []
+    for pos in neighbor_cells:
+        if maze[pos] != 0:
+            possible_moves.append(pos)
+
+    printc("init position: ", position, neighbor_cells, possible_moves)
+
+    # move the head
+    # TODO: tidyup this section
+    if len(possible_moves) == 1:
+        position = possible_moves[0]
+    elif len(possible_moves) > 1:
+        # in case of multiple possible moves, choose the cell that is closer to the end point
+        min_val = 100000  # should be greater than the maximum disctance possible from end point
+        min_val_pos = []
+        for i in possible_moves:
+            if value_matrix[i] < min_val:
+                min_val = value_matrix[i]
+                min_val_pos = i
+        position = min_val_pos
+        possible_moves.remove(min_val_pos)
+        junctions.append(
+            possible_moves
+        )  # junctions are cells that multiple moves can be performed from them
+
+    printc("final position: ", position, neighbor_cells, possible_moves)
+    # TODO: define a history variable that contains all moves preformed. then you can copy history from beginning till history.index(junctions[0][i])
+    # TODO: make this function recursive. check to see if we reached the end point or not. if we reached it we can append the path that we took to a list
+    # TODO: and try other paths. (junctions)
+
+
 ##################
 # STARTING POINT #
 ##################
@@ -70,3 +112,4 @@ printc(maze)
 
 
 get_maze()
+find_move(START)
