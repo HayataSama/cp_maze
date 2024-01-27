@@ -115,6 +115,22 @@ def find_path(position):
             break
 
 
+def print_solution():
+    # generate solution maze
+    for i in range(len(solved_maze)):
+        for j in range(len(solved_maze[i])):
+            if (i, j) in history:
+                solved_maze[i][j] = colors.fg.green + (chr(9608) * 2) + colors.reset
+            else:
+                solved_maze[i][j] = colors.reset + (chr(9608) * 2)
+
+    # print solution maze
+    for i in range(len(solved_maze)):
+        for j in range(len(solved_maze[i])):
+            print(solved_maze[i][j], end="")
+        print()
+
+
 ##################
 # STARTING POINT #
 ##################
@@ -122,9 +138,9 @@ def find_path(position):
 # random.seed(4)
 random.seed(int(random.random() * 10))
 MAZE = generate_maze(HEIGHT, WIDTH)  # generated maze is a numpy ndarray
+solved_maze = MAZE.astype("int").tolist()
 printc(f"\nmaze:\n{MAZE}")
 
 START, END, VALUE_MATRIX = get_maze(MAZE)
 find_path(START)
-
 # TODO: define junctions variable to find other paths. it should probably be a dictionary so each junction's relationship (parent, child, sibling) with other junctions is specified.
