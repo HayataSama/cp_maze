@@ -24,6 +24,7 @@ assert HEIGHT % 2 == 1 and HEIGHT >= 3
 correct_paths = []  # list of paths that reach the end
 dead_ends = []  # list of paths that reach a dead-end
 solved_maze = []  # MAZE with the shortest path specified
+MAZE = np.array((HEIGHT, WIDTH))  # randomly generated maze
 START = tuple()  # start point
 END = tuple()  # end point
 VALUE_MATRIX = np.array((HEIGHT, WIDTH))  # MAZE with cell values specified
@@ -102,7 +103,11 @@ def find_move(position: tuple, history: list) -> list:
     # find all possible moves for a given position
     possible_moves = []
     for pos in neighbor_cells:
-        if (MAZE[pos] == 1 or MAZE[pos] == -2) and pos not in history:
+        if (
+            (MAZE[pos] == 1 or MAZE[pos] == -2)
+            and pos not in history
+            and position != END
+        ):
             possible_moves.append(pos)
 
     return possible_moves
@@ -123,7 +128,7 @@ def find_shortest_path() -> list:
     for i, path in enumerate(correct_paths):
         for j, pos in enumerate(path):
             cost[i] += VALUE_MATRIX[pos]
-        my_dict.update({cost[i]: path[i]})
+        my_dict.update({cost[i]: path})
     # find the shortest path
     shortest_path = sorted(my_dict.items())[0][1]
     return shortest_path
@@ -139,19 +144,83 @@ def print_solution(shortest_path: list) -> None:
     """
     # generate solution maze
     for i, row in enumerate(solved_maze):
-        for j, cell in row:
+        for j, cell in enumerate(row):
             if (i, j) in shortest_path:
-                cell = colors.fg.green + (chr(9608) * 2) + colors.reset
+                solved_maze[i][j] = colors.fg.green + (chr(9608) * 2) + colors.reset
             elif cell == 0:
-                cell = colors.reset + (chr(9608) * 2)
+                solved_maze[i][j] = colors.reset + (chr(9608) * 2)
             elif cell == 1:
-                cell = colors.reset + "  "
+                solved_maze[i][j] = colors.reset + "  "
 
     # print solution maze
     for i, row in enumerate(solved_maze):
-        for j, cell in row:
+        for j, cell in enumerate(row):
             print(cell, end="")
         print()
+
+
+def find_path(position, n, history, cost):
+    if n == -1:
+        while True:
+            possible_moves = find_move(position, history)
+            position, history = check_junction(position, history, possible_moves)
+            if position == (-1, -1) and history == []:
+                break
+    elif n > 0:
+        for i in range(n):
+            possible_moves = find_move(position, history)
+            position, history = check_junction(position, history, possible_moves)
+            cost += VALUE_MATRIX[position]
+            possible_moves = find_move(position, history)
+            if position == END or (position != END and len(possible_moves) == 0):
+                break
+        return position, history, cost, possible_moves
+
+
+def check_junction(position, history, possible_moves):
+    if len(possible_moves) == 0:  # dead end
+        return (-1, -1), []
+    elif len(possible_moves) == 1:  # move
+        position, history = move(position, history, possible_moves)
+        if position == END:
+            correct_paths.append(history)
+        return position, history
+    elif len(possible_moves) > 1:
+        check_good_path(position, history, possible_moves)
+        return (-1, -1), []
+
+
+def check_good_path(position, history, possible_moves):
+    junction = position
+    for i in possible_moves:
+        position = i
+        cost = VALUE_MATRIX[position]
+        history.append(i)
+        position, history, cost, possible_moves = find_path(
+            position, 5 - 1, history, cost
+        )  # n is 5
+
+        if position == END:
+            correct_paths.append(history)
+        elif len(possible_moves) == 0:
+            pass
+        elif len(possible_moves) != 0 and (cost - VALUE_MATRIX[junction] * 5 <= -2):
+            find_path(position, -1, history, 0)
+            # or
+            # k = history.index(i)
+            # history = history[: k + 1]
+            # find_path(i, -1, history, 0)
+        elif len(possible_moves) != 0 and (cost - VALUE_MATRIX[junction] * 5 > -2):
+            pass
+        # prepare history for the next move in the junction
+        k = history.index(junction)
+        history = history[: k + 1]
+
+
+def move(position, history, possible_moves):
+    position = possible_moves[0]
+    history.append(position)
+    return position, history
 
 
 ##################
@@ -165,4 +234,10 @@ printc(f"\nmaze:\n{MAZE}")
 solved_maze = MAZE.astype("int").tolist()
 
 START, END, VALUE_MATRIX = get_maze(MAZE)
-print()
+
+# ! doesn't work in some situations. try 13x13
+find_path(START, -1, [START], 0)
+shortest_path = find_shortest_path()
+print_solution(shortest_path)
+
+# * mishe vase inke hata az in ham efficient tar she, ye flag noJunction tooye find_path tarif konim ke baes she vaghti darim khode junction haro baresi mikonim, dige junction haye oonaro check nakonim
