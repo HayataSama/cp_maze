@@ -1,3 +1,9 @@
+"""
+# Summary
+A python program to find the shortest path in a given maze.
+"""
+
+
 ###########
 # IMPORTS #
 ###########
@@ -15,29 +21,44 @@ WIDTH = int(input("Enter an odd number for Width: "))
 HEIGHT = int(input("Enter an odd number for Height: "))
 assert WIDTH % 2 == 1 and WIDTH >= 3
 assert HEIGHT % 2 == 1 and HEIGHT >= 3
-history = []  # list of moves that are performed in each path
 correct_paths = []  # list of paths that reach the end
 dead_ends = []  # list of paths that reach a dead-end
+solved_maze = []  # MAZE with the shortest path specified
+START = tuple()  # start point
+END = tuple()  # end point
+VALUE_MATRIX = np.array((HEIGHT, WIDTH))  # MAZE with cell values specified
 
 
 ########################
 # FUNCTION DEFINITIONS #
 ########################
-def printc(*text, color="\033[0m", sep=" ", end="\n"):
+def printc(*text: object, color="\033[0m", sep=" ", end="\n") -> None:
     """
     ### Summary:
         prints colored text to the terminal using ANSI Codes and python's built-in print() function.
 
     ### Args:
         text: the text to be printed (accepts multiple values).
-        color (str, optional): use colors.fg._color_ to select the text color. Defaults to white.
-        sep (str, optional) Defaults to " ".
-        end (str, optional) Defaults to "\n".
+        color (str, optional): use colors.fg.color to select the text color. Defaults to white.
+        sep (str, optional): Defaults to " ".
+        end (str, optional): Defaults to "\\n".
     """
     print(*[f"{color}{t}{colors.reset}" for t in text], end=end, sep=sep)
 
 
 def get_maze(maze):
+    """
+    ### Summary:
+        Finds start and end point of the maze and assigns value to each cell base on their disctance from the end.
+
+    ### Args:
+        maze (np.ndarray): Generated maze from mazebackend.py
+
+    ### Returns:
+        tuple: Start point
+        tuple: End point
+        np.ndarray: Value matrix
+    """
     value_matrix = np.copy(maze)
     # find start and end position in the matrix
     start = (
@@ -48,7 +69,6 @@ def get_maze(maze):
         int(np.where(value_matrix == -2)[0][0]),
         int(np.where(value_matrix == -2)[1][0]),
     )
-    history.append(start)
     # assign value to each cell base on its distance to the end point
     for i, val in np.ndenumerate(value_matrix):
         if val != 0:
@@ -59,7 +79,18 @@ def get_maze(maze):
     return start, end, value_matrix
 
 
-def find_move(position):
+def find_move(position: tuple, history: list) -> list:
+    """
+    ### Summary:
+    Checks neighbor cells and returns a list of possible moves
+
+    Args:
+        position (tuple): Current position of the head
+        history (list): List of moves that are preformed until now
+
+    Returns:
+        list: List of all possible moves
+    """
     # find all 4 neighbor cells for a given position
     neighbor_cells = [
         (position[0], position[1] + 1),  # right
@@ -71,63 +102,55 @@ def find_move(position):
     # find all possible moves for a given position
     possible_moves = []
     for pos in neighbor_cells:
-        if (MAZE[pos] == 1 or MAZE[pos] == -2) and pos != history[-1]:
+        if (MAZE[pos] == 1 or MAZE[pos] == -2) and pos not in history:
             possible_moves.append(pos)
 
     return possible_moves
 
 
-def move(position, possible_moves):
-    # if at a given point, multiple moves can be performed, choose the one that gets the head closer to the end point first
-    min_val = (
-        100000  # should be greater than the maximum distance possible from end point
-    )
-    for i in possible_moves:
-        if VALUE_MATRIX[i] < min_val:
-            min_val = VALUE_MATRIX[i]
-            min_val_pos = i
-    history.append(position)
-    position = min_val_pos
-    return position
+def find_shortest_path() -> list:
+    """
+    ### summary:
+    Finds the shortest path from correct_paths global variable
+
+    ### Returns:
+        list: List of moves performed in the shortest path
+    """
+    global VALUE_MATRIX, correct_paths
+    # calculate the cost of each path
+    my_dict = {}
+    cost = [0 for i in range(len(correct_paths))]
+    for i, path in enumerate(correct_paths):
+        for j, pos in enumerate(path):
+            cost[i] += VALUE_MATRIX[pos]
+        my_dict.update({cost[i]: path[i]})
+    # find the shortest path
+    shortest_path = sorted(my_dict.items())[0][1]
+    return shortest_path
 
 
-def find_path(position):
-    # finds a path, it can lead to the end point or a dead-end
-    possible_moves = find_move(position)
-    history.pop()  # this makes sure the START position is not duplicated
-    while len(possible_moves) != 0:
-        position = move(position, possible_moves)
-        possible_moves = find_move(position)
-        # check whether we have reached the end or a dead-end
-        if position == END:
-            history.append(position)  # history does not contain the current position
-            correct_paths.append(history)
-            printc("reached the end!")
-            printc(f"path: {history}")
-            history.clear()
-            break
-        if position != END and len(possible_moves) == 0:
-            history.append(position)  # history does not contain the current position
-            dead_ends.append(history)
-            printc("reached a dead-end")
-            printc(f"path: {history}")
-            history.clear()
-            break
+def print_solution(shortest_path: list) -> None:
+    """
+    ### Summary:
+    Prints the maze and the shortest path
 
-
-def print_solution():
+    ### Args:
+        shortest_path (list): List of moves performed in the shortest path
+    """
     # generate solution maze
-    for i in range(len(solved_maze)):
-        for j in range(len(solved_maze[i])):
-            if (i, j) in history:
-                solved_maze[i][j] = colors.fg.green + (chr(9608) * 2) + colors.reset
-            else:
-                solved_maze[i][j] = colors.reset + (chr(9608) * 2)
+    for i, row in enumerate(solved_maze):
+        for j, cell in row:
+            if (i, j) in shortest_path:
+                cell = colors.fg.green + (chr(9608) * 2) + colors.reset
+            elif cell == 0:
+                cell = colors.reset + (chr(9608) * 2)
+            elif cell == 1:
+                cell = colors.reset + "  "
 
     # print solution maze
-    for i in range(len(solved_maze)):
-        for j in range(len(solved_maze[i])):
-            print(solved_maze[i][j], end="")
+    for i, row in enumerate(solved_maze):
+        for j, cell in row:
+            print(cell, end="")
         print()
 
 
@@ -135,12 +158,11 @@ def print_solution():
 # STARTING POINT #
 ##################
 # generate maze
-# random.seed(4)
-random.seed(int(random.random() * 10))
+random.seed(135)
+# random.seed(int(random.random() * 10))
 MAZE = generate_maze(HEIGHT, WIDTH)  # generated maze is a numpy ndarray
-solved_maze = MAZE.astype("int").tolist()
 printc(f"\nmaze:\n{MAZE}")
+solved_maze = MAZE.astype("int").tolist()
 
 START, END, VALUE_MATRIX = get_maze(MAZE)
-find_path(START)
-# TODO: define junctions variable to find other paths. it should probably be a dictionary so each junction's relationship (parent, child, sibling) with other junctions is specified.
+print()
