@@ -83,13 +83,13 @@ def get_maze(maze):
 def find_move(position: tuple, history: list) -> list:
     """
     ### Summary:
-    Checks neighbor cells and returns a list of possible moves
+        Checks neighbor cells and returns a list of possible moves
 
-    Args:
+    ### Args:
         position (tuple): Current position of the head
         history (list): List of moves that are preformed until now
 
-    Returns:
+    ### Returns:
         list: List of all possible moves
     """
     # find all 4 neighbor cells for a given position
@@ -116,7 +116,7 @@ def find_move(position: tuple, history: list) -> list:
 def find_shortest_path() -> list:
     """
     ### summary:
-    Finds the shortest path from correct_paths global variable
+        Finds the shortest path from correct_paths global variable
 
     ### Returns:
         list: List of moves performed in the shortest path
@@ -137,7 +137,7 @@ def find_shortest_path() -> list:
 def print_solution(shortest_path: list) -> None:
     """
     ### Summary:
-    Prints the maze and the shortest path
+        Prints the maze and the shortest path
 
     ### Args:
         shortest_path (list): List of moves performed in the shortest path
@@ -159,25 +159,36 @@ def print_solution(shortest_path: list) -> None:
         print()
 
 
-def find_path(position, n, history, cost):
-    if n == -1:
-        while True:
-            possible_moves = find_move(position, history)
-            position, history = check_junction(position, history, possible_moves)
-            if position == (-1, -1) and history == []:
-                break
-    elif n > 0:
-        for i in range(n):
-            possible_moves = find_move(position, history)
-            position, history = check_junction(position, history, possible_moves)
-            cost += VALUE_MATRIX[position]
-            possible_moves = find_move(position, history)
-            if position == END or (position != END and len(possible_moves) == 0):
-                break
-        return position, history, cost, possible_moves
+def find_path(position: tuple, history: list) -> None:
+    """
+    ### Summary:
+        Finds path
+
+    Args:
+        position (tuple): Current positioin of the head
+        history (list): List of moves that are preformed until now
+    """
+    while True:
+        possible_moves = find_move(position, history)
+        position, history = check_junction(position, history, possible_moves)
+        if position == (-1, -1) and history == []:
+            break
 
 
-def check_junction(position, history, possible_moves):
+def check_junction(position: tuple, history: list, possible_moves: list):
+    """
+    ### Summary:
+        Checks possible moves to
+
+    ### Args:
+        position (tuple): Current positioin of the head
+        history (list): List of moves that are preformed until now
+        possible_moves (list): List of all possible moves
+
+    ### Returns:
+        tuple: Current position
+        list: History of moves
+    """
     if len(possible_moves) == 0:  # dead end
         return (-1, -1), []
     elif len(possible_moves) == 1:  # move
@@ -185,17 +196,26 @@ def check_junction(position, history, possible_moves):
         if position == END:
             correct_paths.append(history)
         return position, history
-    elif len(possible_moves) > 1:
+    elif len(possible_moves) > 1:  # junction
         check_good_path(position, history, possible_moves)
         return (-1, -1), []
 
 
-def check_good_path(position, history, possible_moves):
+def check_good_path(position: tuple, history: list, possible_moves: list) -> None:
+    """
+    ### Summary:
+        Checks all possible paths in every junction
+
+    ### Args:
+        position (tuple): Current positioin of the head
+        history (list): List of moves that are preformed until now
+        possible_moves (list): List of all possible moves
+    """
     junction = position
     for i in possible_moves:
         position = i
         history.append(i)
-        find_path(position, -1, history, 0)  # n is 5
+        find_path(position, history)  # n is 5
 
         if position == END:
             correct_paths.append(history)
@@ -204,7 +224,20 @@ def check_good_path(position, history, possible_moves):
         history = history[: k + 1]
 
 
-def move(position, history, possible_moves):
+def move(position: tuple, history: list, possible_moves: list) -> [tuple, list]:
+    """
+    ### Summary:
+        Moves the head in the given direction
+
+    ### Args:
+        position (tuple): Current positioin of the head
+        history (list): List of moves that are preformed until now
+        possible_moves (list): List of all possible moves
+
+    ### Returns:
+        tuple: Current position
+        list: History of moves
+    """
     position = possible_moves[0]
     history.append(position)
     return position, history
@@ -214,15 +247,14 @@ def move(position, history, possible_moves):
 # STARTING POINT #
 ##################
 # generate maze
-random.seed(135)
+# random.seed(135)
 random.seed(int(random.random() * 10))
 MAZE = generate_maze(HEIGHT, WIDTH)  # generated maze is a numpy ndarray
-printc(f"\nmaze:\n{MAZE}")
 solved_maze = MAZE.astype("int").tolist()
-
 START, END, VALUE_MATRIX = get_maze(MAZE)
+printc(f"\nmaze:\n{MAZE}")
 
-
-find_path(START, -1, [START], 0)
+# Start the algorithm
+find_path(START, [START])
 shortest_path = find_shortest_path()
 print_solution(shortest_path)
